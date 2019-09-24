@@ -55,7 +55,8 @@ binaries_dir="${build_dir}/${OS_PATH}/Release"
 cd $binaries_dir
 
 #./Test /media/anubis/Data/OpenVINO/Datasets/PH2/training/images/IMD002.bmp
-./Test /media/anubis/Data/OpenVINO/Datasets/PH2/training/images /media/anubis/Data/OpenVINO/UnetFull UNetFull GPU
+
+./Test /media/anubis/Data/OpenVINO/Datasets/PH2/training/images /media/anubis/Data/OpenVINO/UnetFull UNetFull Class_100E_160x320D GPU
 #./Test /media/anubis/Data/OpenVINO/Datasets/ISIC/images /media/anubis/Data/OpenVINO/UnetFull UNetFull
 #./security_barrier_camera_demo -d $target -d_va $target -d_lpr $target -i $target_image_path -m "${vehicle_license_plate_detection_model_path}.xml" -m_va "${vehicle_attributes_recognition_model_path}.xml" -m_lpr "${license_plate_recognition_model_path}.xml" ${sampleoptions}
 
