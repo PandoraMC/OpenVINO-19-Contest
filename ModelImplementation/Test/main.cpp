@@ -12,6 +12,8 @@
 #include <string>
 #include <samples/common.hpp>
 #include <math.h>
+#include "ImageProcessor.h"
+#include "StringHandler.h"
 
 #include <inference_engine.hpp>
 #include <ext_list.hpp>
@@ -26,17 +28,8 @@ typedef chrono::high_resolution_clock Time;
 typedef chrono::duration<double, ratio<1, 1000>> ms;
 typedef chrono::duration<float> fsec;
 
-list<string> getFileNames(char* strDirectory);
 void configModelInterfaces(CNNNetwork Model, string *inLayerName, string *outLayerName);
 CNNNetwork ReadModel(char* modelDir, char *modelName);
-string getListFileName(list<string> FileNames, int index);
-char* getDirectory(char** argv, int value);
-char* composeFilePath(char* path, char* file, char* ext);
-Mat composeClassSeg(Blob::Ptr ptrBlobProb);
-Mat colorObjective(Mat imageMat, Mat classMat, Scalar colorMask, float alpha, int objetive);
-int getClass(Blob::Ptr ptrBlobProb);
-Mat getObjective(Mat Classes, int obj);
-void drawFeatures(Mat refImage, Mat binImage, float *Ecc, int *Area);
 void measure(InferRequest Infer, string id);
 static UNUSED Blob::Ptr wrapMat2Blob(const Mat &mat);
 
@@ -76,20 +69,23 @@ int main(int argc, char** argv){
 
 		SegRes.supportedLayersMap["layerName"] = "CPU";
 		ClassRes.supportedLayersMap["layerName"] = "CPU";
-
+		cout << endl << "[Segmentation architecture]" << endl;
 		for (auto && layer : SegRes.supportedLayersMap)
-			if(layer.first.compare("layerName"))
+			if(layer.first.compare("layerName")){
 				SegNet.getLayerByName(layer.first.c_str())->affinity = layer.second;
-
+				cout << layer.first << "; " << SegNet.getLayerByName(layer.first.c_str())->affinity << endl;
+			}
+		cout << endl << "[Classification architecture]" << endl;
 		for (auto && layer : ClassRes.supportedLayersMap)
-			if(layer.first.compare("layerName"))
+			if(layer.first.compare("layerName")){
 				ClassNet.getLayerByName(layer.first.c_str())->affinity = layer.second;
-
+				cout << layer.first << "; " << ClassNet.getLayerByName(layer.first.c_str())->affinity << endl;
+			}
 		// 3. Configure input & output
 		// 3.1 Input configuration. Mark input as resizable by setting of a resize algorithm.
 		configModelInterfaces(SegNet, &inSegLayerName, &outSegLayerName);
 		configModelInterfaces(ClassNet, &inClassLayerName, &outClassLayerName);
-		cout << "Segmentation input layer name: " << inSegLayerName << endl;
+		cout << endl << "Segmentation input layer name: " << inSegLayerName << endl;
 		cout << "Segmentation output layer name: " << outSegLayerName << endl;
 		cout << "Classification input layer name: " << inClassLayerName << endl;
 		cout << "Classification output layer name: " << outClassLayerName << endl;
@@ -178,49 +174,7 @@ void measure(InferRequest Inference, string id){
 	fsec fs = t1-t0;
 	ms d = chrono::duration_cast<ms>(fs);
 	cout << id << " inference duration: " << d.count() << " ms" << endl;
-	cout << "Throughput: " << 1000 / d.count() << " FPS" << endl;
-}
-
-void drawFeatures(Mat refImage, Mat binImage, float *Ecc, int *Area){
-	Moments mnt = moments(binImage, false);
-	*Area = mnt.m00;
-	float cx = mnt.m10/mnt.m00;
-	float cy = mnt.m01/mnt.m00;
-	float angle = atan2(2*mnt.mu11, mnt.mu20-mnt.mu02)/2;
-	float a1 = (mnt.mu20 + mnt.mu02 + sqrt(pow(mnt.mu20 - mnt.mu02, 2) + 4*pow(mnt.mu11, 2)));
-	float a2 = (mnt.mu20 + mnt.mu02 - sqrt(pow(mnt.mu20 - mnt.mu02, 2) + 4*pow(mnt.mu11, 2)));
-	float ra = sqrt(2*a1/mnt.m00);
-	float rb = sqrt(2*a2/mnt.m00);
-	*Ecc = a1/a2;
-	/*float ebx = cos(angle), eby = sin(angle);
-	float eax = sin(angle), eay = -cos(angle);
-	Size imgSize = binImage.size();
-	size_t H = imgSize.height;
-	size_t W = imgSize.width;
-	float amin = W, amax = 0.0;
-	float bmin = H, bmax = 0.0;
-	for (size_t w = 0; w < W; w++)
-		for (size_t h = 0; h < H; h++)
-			if((int)binImage.at<uchar>(h, w)){
-				float a = w*eax + h*eay;
-				amin = min(amin, a);
-				amax = max(amax, a);
-				float b = w*ebx + h*eby;
-				bmin = min(bmin, b);
-				bmax = max(bmax, b);
-			}
-	Point A(amin*eax + bmin*ebx, amin*eay + bmin*eby);
-	Point B(amin*eax + bmax*ebx, amin*eay + bmax*eby);
-	Point C(amax*eax + bmax*ebx, amax*eay + bmax*eby);
-	Point D(amax*eax + bmin*ebx, amax*eay + bmin*eby);
-	line(refImage, A, B, Scalar(0,227,255), 2, LINE_AA);
-	line(refImage, B, C, Scalar(217,255,0), 2, LINE_AA);
-	line(refImage, C, D, Scalar(0,227,255), 2, LINE_AA);
-	line(refImage, D, A, Scalar(217,255,0), 2, LINE_AA);*/
-
-	line(refImage, Point(cx - ra*cos(angle), cy - ra*sin(angle)), Point(cx + ra*cos(angle), cy + ra*sin(angle)), Scalar(0,227,255), 2, LINE_AA);
-	angle += CV_PI/2;
-	line(refImage, Point(cx - rb*cos(angle), cy - rb*sin(angle)), Point(cx + rb*cos(angle), cy + rb*sin(angle)), Scalar(217,255,0), 2, LINE_AA);
+	cout << "Throughput: " << 1000/d.count() << " FPS" << endl;
 }
 
 void configModelInterfaces(CNNNetwork Model, string *inLayerName, string *outLayerName){
@@ -239,123 +193,6 @@ CNNNetwork ReadModel(char* modelDir, char *modelName){
 	NetReader.ReadNetwork(composeFilePath(modelDir, modelName, (char*)".xml"));
 	NetReader.ReadWeights(composeFilePath(modelDir, modelName, (char*)".bin"));
         return NetReader.getNetwork();
-}
-
-list<string> getFileNames(char* strDirectory){
-	list<string> lstFiles;
-	DIR *directory;
-	struct dirent *element;
-	directory = opendir(strDirectory);
-	if(directory){
-        	while ((element = readdir(directory)) != NULL)
-			lstFiles.push_front(element->d_name);
-        	closedir(directory);
-	}
-	return lstFiles;
-}
-
-string getListFileName(list<string> FileNames, int index){
-	list<string>::iterator FileName = FileNames.begin();
-	advance(FileName, index);
-	return *FileName;
-}
-
-char* getDirectory(char** argv, int value){
-	int intPathLen = strlen(*(argv + value));
-	char *chrPath = (char*)malloc(sizeof(char)*(intPathLen + 2));
-	strcpy(chrPath, *(argv + value));
-	*(chrPath + intPathLen) = '/';
-	*(chrPath + intPathLen + 1) = '\0';
-	return chrPath;
-}
-
-char* composeFilePath(char* path, char* file, char* ext){
-	int intPathLen = strlen(path);
-	int intFileLen = strlen(file);
-	int intExtLen = strlen(ext);
-	int fullPathLen = intPathLen + intFileLen + intExtLen;
-	char *ptrFullPath = (char*)malloc(sizeof(char)*(fullPathLen + 1));
-	strcpy(ptrFullPath, path);
-	strcpy(ptrFullPath + intPathLen, file);
-	strcpy(ptrFullPath + intPathLen + intFileLen, ext);
-	*(ptrFullPath + intPathLen + intFileLen + intExtLen) = '\0';
-	return ptrFullPath;
-}
-
-Mat composeClassSeg(Blob::Ptr ptrBlobProb){
-	const auto output_data = ptrBlobProb->buffer().as<float*>();
-        size_t C, H, W;
-	size_t output_blob_shape_size = ptrBlobProb->getTensorDesc().getDims().size();
-
-	if (output_blob_shape_size == 3) {
-		C = 1;
-		H = ptrBlobProb->getTensorDesc().getDims().at(1);
-		W = ptrBlobProb->getTensorDesc().getDims().at(2);
-        } else if (output_blob_shape_size == 4) {
-		C = ptrBlobProb->getTensorDesc().getDims().at(1);
-		H = ptrBlobProb->getTensorDesc().getDims().at(2);
-		W = ptrBlobProb->getTensorDesc().getDims().at(3);
-        } else {
-		throw std::logic_error("Unexpected output blob shape. Only 4D and 3D output blobs are supported.");
-        }
-	Mat classMat(H, W, CV_8UC1, Scalar(0, 0, 0));
-	vector<vector<size_t>> classArray(H, vector<size_t>(W, 0));
-	vector<vector<float>> probArray(H, vector<float>(W, 0.));
-	for (size_t w = 0; w < W; w++)
-		for (size_t h = 0; h < H; h++)
-			if (C == 1)
-				classArray[h][w] = static_cast<size_t>(output_data[W * h + w]);
-			else
-				for (size_t classID = 0; classID < C; classID++) {
-					auto data = output_data[W * H * classID + W * h + w];
-					if (data > probArray[h][w]) {
-						classArray[h][w] = classID;
-						probArray[h][w] = data;
-						classMat.at<uchar>(h,w) = classID;
-					}
-				}
-	return classMat;
-}
-
-Mat colorObjective(Mat imageMat, Mat classMat, Scalar colorMask, float alpha, int objetive){
-	size_t H = classMat.rows, W = classMat.cols;
-	Vec3b pixelData;
-	for (size_t w = 0; w < W; w++)
-		for (size_t h = 0; h < H; h++)
-			if(classMat.at<uchar>(h, w) == objetive){
-				pixelData = imageMat.at<Vec3b>(h, w);
-				pixelData[0] = pixelData[0]*alpha + colorMask[0]*(1-alpha);
-				pixelData[1] = pixelData[1]*alpha + colorMask[1]*(1-alpha);
-				pixelData[2] = pixelData[2]*alpha + colorMask[2]*(1-alpha);
-				imageMat.at<Vec3b>(h, w) = pixelData;
-			}
-	return imageMat;
-}
-
-Mat getObjective(Mat Classes, int obj){
-	Size imgSize = Classes.size();
-	Mat classMask(imgSize, CV_8UC1, Scalar(0));
-	size_t H = imgSize.height;
-	size_t W = imgSize.width;
-	for (size_t w = 0; w < W; w++)
-		for (size_t h = 0; h < H; h++)
-			classMask.at<uchar>(h, w) = (Classes.at<uchar>(h, w) == obj);
-	return classMask;
-}
-
-int getClass(Blob::Ptr ptrBlobProb){
-	size_t ClassOut_size = ptrBlobProb->getTensorDesc().getDims().at(1);
-	const auto output_data = ptrBlobProb->buffer().as<float*>();
-	int classID = 0;
-	float ptr = 0;
-	for (size_t prob = 0; prob < ClassOut_size; prob++){
-		auto data = output_data[prob];
-		if(data > ptr){
-			classID = prob;
-			ptr = data;
-		}
-	}
-	return classID;
 }
 
 static UNUSED Blob::Ptr wrapMat2Blob(const Mat &mat) {
