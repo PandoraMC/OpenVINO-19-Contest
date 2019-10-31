@@ -3,6 +3,7 @@
 #include <opencv2/imgproc.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <inference_engine.hpp>
+#include <stdarg.h>
 #include "ImageProcessor.h"
 
 using namespace cv;
@@ -20,8 +21,20 @@ void drawFeatures(Mat refImage, Mat binImage, float *Ecc, int *Area){
 	*Ecc = a1/a2;
 	float ra = sqrt(2*a1/(*Area));
 	float rb = sqrt(2*a2/(*Area));
-	/*float ebx = cos(angle), eby = sin(angle);
-	float eax = sin(angle), eay = -cos(angle);
+	/*Point A, B, C, D;
+	BBPoints(binImage, angle, &A, &B, &C, &D);
+	line(refImage, A, B, Scalar(0,227,255), 2, LINE_AA);
+	line(refImage, B, C, Scalar(217,255,0), 2, LINE_AA);
+	line(refImage, C, D, Scalar(0,227,255), 2, LINE_AA);
+	line(refImage, D, A, Scalar(217,255,0), 2, LINE_AA);*/
+	line(refImage, Point(cx - ra*cos(angle), cy - ra*sin(angle)), Point(cx + ra*cos(angle), cy + ra*sin(angle)), Scalar(0,227,255), 2, LINE_AA);
+	angle += CV_PI/2;
+	line(refImage, Point(cx - rb*cos(angle), cy - rb*sin(angle)), Point(cx + rb*cos(angle), cy + rb*sin(angle)), Scalar(217,255,0), 2, LINE_AA);
+}
+
+void BBPoints(Mat binImage, float angle, Point *A, Point *B, Point *C, Point *D){
+	float ebx = cos(angle),	eby = sin(angle);
+	float eax = sin(angle),	eay = -cos(angle);
 	size_t H = binImage.size().height;
 	size_t W = binImage.size().width;
 	float amin = W, amax = 0.0;
@@ -36,18 +49,10 @@ void drawFeatures(Mat refImage, Mat binImage, float *Ecc, int *Area){
 				bmin = min(bmin, b);
 				bmax = max(bmax, b);
 			}
-	Point A(amin*eax + bmin*ebx, amin*eay + bmin*eby);
-	Point B(amin*eax + bmax*ebx, amin*eay + bmax*eby);
-	Point C(amax*eax + bmax*ebx, amax*eay + bmax*eby);
-	Point D(amax*eax + bmin*ebx, amax*eay + bmin*eby);
-	line(refImage, A, B, Scalar(0,227,255), 2, LINE_AA);
-	line(refImage, B, C, Scalar(217,255,0), 2, LINE_AA);
-	line(refImage, C, D, Scalar(0,227,255), 2, LINE_AA);
-	line(refImage, D, A, Scalar(217,255,0), 2, LINE_AA);
-*/
-	line(refImage, Point(cx - ra*cos(angle), cy - ra*sin(angle)), Point(cx + ra*cos(angle), cy + ra*sin(angle)), Scalar(0,227,255), 2, LINE_AA);
-	angle += CV_PI/2;
-	line(refImage, Point(cx - rb*cos(angle), cy - rb*sin(angle)), Point(cx + rb*cos(angle), cy + rb*sin(angle)), Scalar(217,255,0), 2, LINE_AA);
+	*A = Point(amin*eax + bmin*ebx, amin*eay + bmin*eby);
+	*B = Point(amin*eax + bmax*ebx,	amin*eay + bmax*eby);
+	*C = Point(amax*eax + bmax*ebx, amax*eay + bmax*eby);
+	*D = Point(amax*eax + bmin*ebx, amax*eay + bmin*eby);
 }
 
 Mat composeClassSeg(Blob::Ptr ptrBlobProb){
@@ -123,4 +128,26 @@ Mat getObjective(Mat Classes, int obj){
 		for (size_t h = 0; h < H; h++)
 			classMask.at<uchar>(h, w) = (Classes.at<uchar>(h, w) == obj);
 	return classMask;
+}
+
+Mat composePresentation(Mat imgReference, Mat imgResults){
+	Mat imgComposite;
+	int border = 10;
+	int header = 120;
+	Scalar backColor(255,255,255);
+	copyMakeBorder(imgReference, imgReference, header, border, border, border, BORDER_CONSTANT, backColor);
+	copyMakeBorder(imgResults, imgResults, header, border, border, border, BORDER_CONSTANT, backColor);
+	hconcat(imgReference, imgResults, imgComposite);
+	return imgComposite;
+}
+
+void setResults(Mat imgFrame, Point pntReference, int strNumber, ...){
+	va_list strArgs;
+	va_start(strArgs, strNumber);
+	for(int str = 0; str < strNumber; str++){
+		pntReference.y += 35;
+		putText(imgFrame, va_arg(strArgs, char*), pntReference, FONT_HERSHEY_DUPLEX, 1, Scalar(0), 2,8,0);
+	}
+	va_end(strArgs);
+	//
 }

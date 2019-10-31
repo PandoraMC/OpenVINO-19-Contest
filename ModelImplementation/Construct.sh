@@ -12,7 +12,8 @@ dashes="\n\n###################################################\n\n"
 
 system_ver=`cat /etc/lsb-release | grep -i "DISTRIB_RELEASE" | cut -d "=" -f2`
 
-setupvars_path="/opt/intel/2019_r1/openvino/bin/setupvars.sh"
+setupvars_path="/opt/intel/2019_r3/openvino/bin/setupvars.sh"
+#setupvars_path="/home/anubis/Documents/terasic_demo/setup_board_osk.sh"
 if ! . $setupvars_path ; then
     printf "Unable to run ./setupvars.sh. Please check its presence. ${run_again}"
     exit 1
@@ -22,7 +23,7 @@ fi
 printf "${dashes}"
 printf "Build Inference Engine demos\n\n"
 
-demos_path="/home/anubis/OpenVINO-19-Contest/ModelImplementation"
+demos_path="/home/anubis/Documents/OpenVINO-19-Contest/ModelImplementation"
 
 if ! command -v cmake &>/dev/null; then
     printf "\n\nCMAKE is not installed. It is required to build Inference Engine demos. Please install it. ${run_again}"
@@ -37,7 +38,7 @@ if [ $OS_PATH == "x86_64" ]; then
   NUM_THREADS="-j8"
 fi
 
-build_dir="/media/anubis/Data/OpenVINO/Models"
+build_dir="/home/anubis/Documents/COMPILADOS"
 printf "${build_dir}"
 if [ -e $build_dir/CMakeCache.txt ]; then
 	rm -rf $build_dir/CMakeCache.txt
@@ -56,9 +57,9 @@ cd $binaries_dir
 
 #./Test /media/anubis/Data/OpenVINO/Datasets/PH2/training/images/IMD002.bmp
 
-./Test /media/anubis/Data/OpenVINO/Datasets/PH2/training/images /media/anubis/Data/OpenVINO/UnetFull UNetFull Class_100E_160x320D GPU
+./Test /media/anubis/Data/OpenVINO/Datasets/PH2/training/images /home/anubis/Documents/COMPILADOS/UNet UNetFull Class_100E_160x320D
+#./Test /media/anubis/Data/OpenVINO/HAM1000/HAM10000_images_part_1 /home/anubis/Documents/COMPILADOS/UNet UNetFull Class_100E_160x320D
 #./Test /media/anubis/Data/OpenVINO/Datasets/ISIC/images /media/anubis/Data/OpenVINO/UnetFull UNetFull
-#./security_barrier_camera_demo -d $target -d_va $target -d_lpr $target -i $target_image_path -m "${vehicle_license_plate_detection_model_path}.xml" -m_va "${vehicle_attributes_recognition_model_path}.xml" -m_lpr "${license_plate_recognition_model_path}.xml" ${sampleoptions}
 
 printf "${dashes}"
 printf "Demo completed successfully.\n\n"
