@@ -131,8 +131,8 @@ int main(int argc, char** argv){
 			// 9. Show Data
 			drawFeatures(outImage, getObjective(classPredict, 0), &Ecc, &Area);
 			Mat imgResults = composePresentation(inImage, outImage);
-			setResults(imgResults, Point(10, 5), 3, "Navigate [<-][->], Quit [Esc]", ("File: " + fileName).c_str(), ("Dimensions: " + to_string(inH) + 'x' + to_string(inW)).c_str());
-			setResults(imgResults, Point(30 + inW, 5), 3, ("Predicted: " + lblClasses[prdClass]).c_str(), ("Area: " + to_string(Area)).c_str(), ("Eccentricity: " + to_string(Ecc)).c_str());
+			setResults(imgResults, Point(10, 5), 3, "Navigate [<-][->], Quit [Esc]", ("File: " + fileName).c_str(), ("Dimensions: " + to_string(inH) + 'x' + to_string(inW) + " px").c_str());
+			setResults(imgResults, Point(30 + inW, 5), 3, ("Predicted: " + lblClasses[prdClass]).c_str(), ("Area: " + to_string(Area) + " px^2").c_str(), ("Eccentricity: " + to_string(Ecc)).c_str());
 
 			auto t1 = Time::now();
 			fsec fs = t1-t0;
